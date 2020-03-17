@@ -3,6 +3,8 @@ const github = require("@actions/github")
 const shell = require("shelljs")
 const yaml = require("js-yaml")
 const fs = require("fs")
+const {Storage} = require('@google-cloud/storage')
+const path = require("path")
 
 const context = github.context
 
@@ -15,6 +17,13 @@ const jazzyArgs = core.getInput("args")
 const token = core.getInput("personal_access_token")
 
 const remote = `https://${token}@github.com/${context.repo.owner}/${context.repo.repo}.git`
+
+// @TODO: validate / default this better
+const platform = core.getInput("platform") || "githubpages"
+const destinationFolder = core.getInput("destination_folder") || ""
+const googleCloudBucket = "maisonkit-docs.lvmhda.com" //core.getInput("bucket_name")
+const googleCloudEmail = core.getInput("google_cloud_email")
+const googleCloudKey = core.getInput("google_cloud_key")
 
 const generateJazzyInstallCommand = () => {
   let gemInstall = "sudo gem install jazzy"
@@ -80,13 +89,7 @@ const getDocumentationFolder = () => {
   return "docs"
 }
 
-const generateAndDeploy = () => {
-  shell.exec(generateJazzyInstallCommand())
-  shell.exec(generateJazzyArguments())
-  shell.exec("mkdir ../.docs")
-  shell.cp("-r", `${getDocumentationFolder()}/*`, "../.docs/")
-
-  shell.cd("../.docs")
+const deployToGitHubPages = () => {
 
   shell.exec("git init")
   shell.exec(`git config user.name ${context.actor}`)
@@ -95,6 +98,67 @@ const generateAndDeploy = () => {
   shell.exec("git commit -m 'Deploying Updated Jazzy Docs'")
   shell.exec(`git push --force ${remote} master:${branch}`)
   
+}
+
+const deployToGoogleCloud = () => {
+  const files = getFilesInFolder(".")
+  uploadFiles(files, googleCloudBucket)
+
+  await uploadFile(bucket, file).catch(console.error);
+}
+
+const getFilesInFolder = (dir, filelist) => {
+  // List all files in a directory in Node.js recursively in a synchronous fashion
+  let files = fs.readdirSync(dir)
+  let filelist = filelist || []
+  files.forEach(function(file) {
+    if (fs.statSync(dir + '/' + file).isDirectory()) {
+      filelist = getFilesInFolder(dir + '/' + file, filelist)
+    }
+    else {
+      filelist.push(dir + '/' + file)
+    }
+  })
+  return filelist
+}
+
+async function uploadFiles(files, bucketName) {
+  const storage = new Storage({credentials: {client_email: googleCloudEmail, private_key: googleCloudKey}})
+
+  for( var i=0; i < files.length; i++) {
+    const filepath = files[i]
+    // Uploads a local file to the bucket
+    const destination = destinationFolder + '/' + path.relative(".", filepath)
+    await storage.bucket(bucketName).upload(filepath, {
+      // Support for HTTP requests made with `Accept-Encoding: gzip`
+      gzip: true,
+      // By setting the option `destination`, you can change the name of the
+      // object you are uploading to a bucket.
+      destination: destination,
+      metadata: {
+        // Enable long-lived HTTP caching headers
+        // Use only if the contents of the file will never change
+        // (If the contents will change, use cacheControl: 'no-cache')
+        cacheControl: 'public, max-age=31536000',
+      },
+    })
+  }
+}
+
+const generateAndDeploy = () => {
+  shell.exec(generateJazzyInstallCommand())
+  shell.exec(generateJazzyArguments())
+  shell.exec("mkdir ../.docs")
+  shell.cp("-r", `${getDocumentationFolder()}/*`, "../.docs/")
+
+  shell.cd("../.docs")
+
+  if (platform == "githubpages") {
+    deployToGitHubPages()
+  } else if (platform == "googlecloud") {
+    deployToGoogleCloud()
+  }
+
   shell.cd(process.env.GITHUB_WORKSPACE)
 }
 
