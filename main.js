@@ -129,8 +129,10 @@ async function uploadFiles(files, bucketName) {
   for( var i=0; i < files.length; i++) {
     const filepath = files[i]
     // Uploads a local file to the bucket
+    const source = path.resolve(filepath)
     const destination = destinationFolder + '/' + path.relative(".", filepath)
-    await storage.bucket(bucketName).upload(filepath, {
+    console.log(`GC > uploading ${source} to ${destination}`)
+    await storage.bucket(bucketName).upload(source, {
       // Support for HTTP requests made with `Accept-Encoding: gzip`
       gzip: true,
       // By setting the option `destination`, you can change the name of the
@@ -154,6 +156,7 @@ const generateAndDeploy = () => {
 
   shell.cd("../.docs")
 
+  console.log(`deploying to ${platform}`)
   if (platform == "githubpages") {
     deployToGitHubPages()
   } else if (platform == "googlecloud") {
