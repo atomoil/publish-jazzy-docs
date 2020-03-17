@@ -22,6 +22,7 @@
     "@actions/exec": "^1.0.1",
     "@actions/github": "^1.1.0",
     "@actions/io": "^1.0.1",
+    "@google-cloud/storage": "^4.6.0",
     "js-yaml": "^3.13.1",
     "rimraf": "^3.0.0",
     "shelljs": "^0.8.3"
