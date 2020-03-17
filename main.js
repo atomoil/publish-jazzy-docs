@@ -111,7 +111,7 @@ const deployToGoogleCloud = () => {
 const getFilesInFolder = (dir, filelist) => {
   // List all files in a directory in Node.js recursively in a synchronous fashion
   let files = fs.readdirSync(dir)
-  let filelist = filelist || []
+  filelist = filelist || []
   files.forEach(function(file) {
     if (fs.statSync(dir + '/' + file).isDirectory()) {
       filelist = getFilesInFolder(dir + '/' + file, filelist)
