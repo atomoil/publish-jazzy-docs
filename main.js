@@ -14,10 +14,13 @@ const branch = "gh-pages"
 const jazzyVersion = core.getInput("version")
 const configFilePath = core.getInput("config")
 const jazzyArgs = core.getInput("args")
+
+// Github Pages
 const token = core.getInput("personal_access_token")
 
 const remote = `https://${token}@github.com/${context.repo.owner}/${context.repo.repo}.git`
 
+// Google Cloud Upload
 // @TODO: validate / default this better
 const platform = core.getInput("platform") || "githubpages"
 const destinationFolder = core.getInput("destination_folder") || ""
@@ -103,8 +106,6 @@ const deployToGitHubPages = () => {
 const deployToGoogleCloud = () => {
   const files = getFilesInFolder(".")
   uploadFiles(files, googleCloudBucket)
-
-  await uploadFile(bucket, file).catch(console.error);
 }
 
 const getFilesInFolder = (dir, filelist) => {
