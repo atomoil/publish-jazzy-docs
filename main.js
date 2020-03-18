@@ -95,8 +95,26 @@ const getDocumentationFolder = () => {
   return "docs"
 }
 
+
+/*
+ Only installs Jazzy if it's not already installed or if the version
+ installed doesn't match the required one.
+*/
+const installJazzyIfNeeded = () => {
+  if (!shell.which('jazzy')) {
+    shell.exec(generateJazzyInstallCommand())
+  } else if (jazzyVersion) {
+    const jazzyVersionString = shell.exec("jazzy -v")
+    const re = /^jazzy version: (.*)$/m
+    const installedVersion = jazzyVersionString.match(re)[1];
+    if (jazzyVersion !== installedVersion) {
+      shell.exec(generateJazzyInstallCommand())
+    }
+  }
+}
+
 const generateAndDeploy = () => {
-  shell.exec(generateJazzyInstallCommand())
+  installJazzyIfNeeded()
   shell.exec(generateJazzyArguments())
   shell.exec("mkdir ../.docs")
   shell.cp("-r", `${getDocumentationFolder()}/*`, "../.docs/")
