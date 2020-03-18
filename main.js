@@ -127,12 +127,13 @@ const getFilesInFolder = (dir, filelist) => {
 async function uploadFiles(files, fullPath, bucketName) {
   let errors = 0
 
-  try {
-    const credsFile = path.resolve(fullPath, "gc.json")
+  const credsFile = path.resolve(fullPath, "gc.json")
+  console.log(`about to write creds to ${credsFile}`)
+  try {  
     fs.writeFileSync(credsFile, googleCloudCredentials, )
   } catch (err) {
     console.error(err)
-    process.exit()
+    process.exit(1)
   }
   
   const storage = new Storage({ keyFilename: credsFile })
@@ -166,7 +167,7 @@ async function uploadFiles(files, fullPath, bucketName) {
   console.log(`GC > finished with ${errors} errors`)
   if (errors > 0) {
     // fail so we can re-run
-    process.exit()
+    process.exit(1)
   }
 }
 
