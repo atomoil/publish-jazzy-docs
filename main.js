@@ -138,7 +138,7 @@ const getFilesInFolder = (dir, ignore, filelist) => {
       filelist = getFilesInFolder(dir + '/' + file, ignore, filelist)
     }
     else {
-      if (!ignore.contains(file)) {
+      if (!ignore.includes(file)) {
         filelist.push(dir + '/' + file)
       }
     }
