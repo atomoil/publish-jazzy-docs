@@ -5,6 +5,7 @@ const yaml = require("js-yaml")
 const fs = require("fs")
 const {Storage} = require('@google-cloud/storage')
 const path = require("path")
+const process = require("process")
 
 const context = github.context
 
@@ -25,9 +26,7 @@ const remote = `https://${token}@github.com/${context.repo.owner}/${context.repo
 const platform = core.getInput("platform") || "githubpages"
 const destinationFolder = core.getInput("destination_folder") || ""
 const googleCloudBucket = "maisonkit-docs.lvmhda.com" //core.getInput("bucket_name")
-const googleCloudEmail = core.getInput("google_cloud_email")
-const googleCloudKey = core.getInput("google_cloud_key")
-const googleCloudProjectId = core.getInput("google_cloud_project_id")
+const googleCloudCredentials = core.getInput("google_cloud_credentials")
 
 const generateJazzyInstallCommand = () => {
   let gemInstall = "sudo gem install jazzy"
@@ -126,14 +125,17 @@ const getFilesInFolder = (dir, filelist) => {
 }
 
 async function uploadFiles(files, fullPath, bucketName) {
-  let hadError = false
-  const storage = new Storage({
-    projectId: googleCloudProjectId, 
-    credentials: {
-      client_email: googleCloudEmail, 
-      private_key: googleCloudKey
-    }
-  })
+  let errors = 0
+
+  try {
+    const credsFile = path.resolve(fullPath, "gc.json")
+    fs.writeFileSync(credsFile, googleCloudCredentials, )
+  } catch (err) {
+    console.error(err)
+    process.exit()
+  }
+  
+  const storage = new Storage({ keyFilename: credsFile })
 
   for( var i=0; i < files.length; i++) {
     const filepath = files[i]
@@ -155,12 +157,14 @@ async function uploadFiles(files, fullPath, bucketName) {
           cacheControl: 'public, max-age=31536000',
         },
       })
+      console.log(`GC > finished uploading ${destination}`)
     } catch (err) {
-      console.log(`Error uploading ${source} > ${err}`)
-      hadError = true
+      console.log(`GC > error uploading ${source} > ${err}`)
+      errors += 1
     }
   }
-  if (hadError) {
+  console.log(`GC > finished with ${errors} errors`)
+  if (errors > 0) {
     // fail so we can re-run
     process.exit()
   }
