@@ -125,7 +125,14 @@ const getFilesInFolder = (dir, filelist) => {
 }
 
 async function uploadFiles(files, bucketName) {
-  const storage = new Storage({projectId: googleCloudProjectId, credentials: {client_email: googleCloudEmail, private_key: googleCloudKey}})
+  let hadError = false
+  const storage = new Storage({
+    projectId: googleCloudProjectId, 
+    credentials: {
+      client_email: googleCloudEmail, 
+      private_key: googleCloudKey
+    }
+  })
 
   for( var i=0; i < files.length; i++) {
     const filepath = files[i]
@@ -149,7 +156,12 @@ async function uploadFiles(files, bucketName) {
       })
     } catch (err) {
       console.log(`Error uploading ${source} > ${err}`)
+      hadError = true
     }
+  }
+  if (hadError) {
+    // fail so we can re-run
+    process.exit()
   }
 }
 
