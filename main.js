@@ -14,7 +14,7 @@ const platforms = {
   GITHUB_PAGES: "github_pages",
   GOOGLE_CLOUD: "google_cloud"
 }
-const platform = (core.getInput("platform") == platforms.GOOGLE_CLOUD) ? plaforms.GOOGLE_CLOUD : platforms.GITHUB_PAGES
+const platform = (core.getInput("platform") == platforms.GOOGLE_CLOUD) ? platforms.GOOGLE_CLOUD : platforms.GITHUB_PAGES
 
 // User defined input
 const jazzyVersion = core.getInput("version")
