@@ -14,6 +14,7 @@ const platforms = {
   GITHUB_PAGES: "github_pages",
   GOOGLE_CLOUD: "google_cloud"
 }
+const platform = (core.getInput("platform") == platforms.GOOGLE_CLOUD) ? plaforms.GOOGLE_CLOUD : platforms.GITHUB_PAGES
 
 // User defined input
 const jazzyVersion = core.getInput("version")
@@ -25,10 +26,9 @@ const token = core.getInput("personal_access_token")
 
 const remote = `https://${token}@github.com/${context.repo.owner}/${context.repo.repo}.git`
 
-// Google Cloud Upload
-const platform = (core.getInput("platform") == platforms.GOOGLE_CLOUD) ? plaforms.GOOGLE_CLOUD : platforms.GITHUB_PAGES
+// Google Cloud
 const destinationFolder = core.getInput("destination_folder") || ""
-const googleCloudBucket = "maisonkit-docs.lvmhda.com" //core.getInput("bucket_name")
+const googleCloudBucket = core.getInput("bucket_name")
 const googleCloudCredentials = core.getInput("google_cloud_credentials")
 
 const generateJazzyInstallCommand = () => {
@@ -95,6 +95,24 @@ const getDocumentationFolder = () => {
   return "docs"
 }
 
+const generateAndDeploy = () => {
+  shell.exec(generateJazzyInstallCommand())
+  shell.exec(generateJazzyArguments())
+  shell.exec("mkdir ../.docs")
+  shell.cp("-r", `${getDocumentationFolder()}/*`, "../.docs/")
+
+  shell.cd("../.docs")
+
+  console.log(`deploying to ${platform}`)
+  if (platform == platforms.GOOGLE_CLOUD) {
+    deployToGoogleCloud()
+  } else {
+    deployToGitHubPages()
+  }
+
+  shell.cd(process.env.GITHUB_WORKSPACE)
+}
+
 const deployToGitHubPages = () => {
 
   shell.exec("git init")
@@ -107,8 +125,8 @@ const deployToGitHubPages = () => {
 }
 
 const deployToGoogleCloud = () => {
-  const files = getFilesInFolder(".")
-  const fullPath = path.resolve(".", ["undocumented.json"])
+  const files = getFilesInFolder(".", ["undocumented.json"])
+  const fullPath = path.resolve(".")
   uploadFilesToGoogleCloud(files, fullPath, googleCloudBucket)
 }
 
@@ -129,7 +147,7 @@ const getFilesInFolder = (dir, ignore, filelist) => {
 }
 
 async function uploadFilesToGoogleCloud(files, fullPath, bucketName) {
-  let errors = 0
+  let errors = []
 
   const credsFile = path.resolve(fullPath, "gc.json")
   try {  
@@ -153,35 +171,14 @@ async function uploadFilesToGoogleCloud(files, fullPath, bucketName) {
           cacheControl: 'no-cache',
         },
       })
-      console.log(`GC > finished uploading ${destination}`)
     } catch (err) {
-      console.log(`GC > error uploading ${source} > ${err}`)
-      errors += 1
+      errors.push(err)
     }
   }
-  console.log(`GC > completed with ${errors} errors`)
   if (errors > 0) {
     // fail so we can re-run
-    core.setFailed(`There were ${errors} errors`)
+    core.setFailed(`There were ${errors.length} errors uploading to Google Cloud:`, errors)
   }
-}
-
-const generateAndDeploy = () => {
-  shell.exec(generateJazzyInstallCommand())
-  shell.exec(generateJazzyArguments())
-  shell.exec("mkdir ../.docs")
-  shell.cp("-r", `${getDocumentationFolder()}/*`, "../.docs/")
-
-  shell.cd("../.docs")
-
-  console.log(`deploying to ${platform}`)
-  if (platform == platforms.GOOGLE_CLOUD) {
-    deployToGoogleCloud()
-  } else {
-    deployToGitHubPages()
-  }
-
-  shell.cd(process.env.GITHUB_WORKSPACE)
 }
 
 try {
