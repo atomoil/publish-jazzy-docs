@@ -30,6 +30,8 @@ const remote = `https://${token}@github.com/${context.repo.owner}/${context.repo
 const destinationFolder = core.getInput("destination_folder") || ""
 const googleCloudBucket = core.getInput("bucket_name")
 const googleCloudCredentials = core.getInput("google_cloud_credentials")
+// Cache control values: https://cloud.google.com/storage/docs/gsutil/addlhelp/WorkingWithObjectMetadata#cache-control_1
+const googleCloudCacheControl = core.getInput("google_cloud_cache_control") || "no-cache"
 
 const generateJazzyInstallCommand = () => {
   let gemInstall = "sudo gem install jazzy"
@@ -168,7 +170,7 @@ async function uploadFilesToGoogleCloud(files, fullPath, bucketName) {
         gzip: true,
         destination: destination,
         metadata: {
-          cacheControl: 'no-cache',
+          cacheControl: googleCloudCacheControl,
         },
       })
     } catch (err) {
