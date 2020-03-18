@@ -106,7 +106,8 @@ const deployToGitHubPages = () => {
 
 const deployToGoogleCloud = () => {
   const files = getFilesInFolder(".")
-  uploadFiles(files, googleCloudBucket)
+  const fullPath = path.resolve(".")
+  uploadFiles(files, fullPath, googleCloudBucket)
 }
 
 const getFilesInFolder = (dir, filelist) => {
@@ -124,7 +125,7 @@ const getFilesInFolder = (dir, filelist) => {
   return filelist
 }
 
-async function uploadFiles(files, bucketName) {
+async function uploadFiles(files, fullPath, bucketName) {
   let hadError = false
   const storage = new Storage({
     projectId: googleCloudProjectId, 
@@ -137,7 +138,7 @@ async function uploadFiles(files, bucketName) {
   for( var i=0; i < files.length; i++) {
     const filepath = files[i]
     // Uploads a local file to the bucket
-    const source = path.resolve(filepath)
+    const source = path.resolve(fullPath, filepath)
     const destination = destinationFolder + '/' + path.relative(".", filepath)
     console.log(`GC > uploading ${source} to ${destination}`)
     try {
