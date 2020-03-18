@@ -27,6 +27,7 @@ const destinationFolder = core.getInput("destination_folder") || ""
 const googleCloudBucket = "maisonkit-docs.lvmhda.com" //core.getInput("bucket_name")
 const googleCloudEmail = core.getInput("google_cloud_email")
 const googleCloudKey = core.getInput("google_cloud_key")
+const googleCloudProjectId = core.getInput("google_cloud_project_id")
 
 const generateJazzyInstallCommand = () => {
   let gemInstall = "sudo gem install jazzy"
@@ -124,7 +125,7 @@ const getFilesInFolder = (dir, filelist) => {
 }
 
 async function uploadFiles(files, bucketName) {
-  const storage = new Storage({credentials: {client_email: googleCloudEmail, private_key: googleCloudKey}})
+  const storage = new Storage({projectId: googleCloudProjectId, credentials: {client_email: googleCloudEmail, private_key: googleCloudKey}})
 
   for( var i=0; i < files.length; i++) {
     const filepath = files[i]
